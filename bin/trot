@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "trot"
+
+# require "irb"
+# IRB.start(__FILE__)
+
+case ARGV[0]
+when 'build'
+  Trot.build
+when 'run'
+  Trot.run
+else
+  STDOUT.puts <<-EOF
+Usage:
+  trot build
+  trot run
+EOF
+end
