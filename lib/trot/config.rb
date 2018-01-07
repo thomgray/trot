@@ -11,7 +11,6 @@ module Trot
         @config = JSON.parse(IO.read(json_trot_path))
       elsif File.exists? yaml_trot_path
         @config = YAML.load(IO.read(yaml_trot_path))
-        puts @config
       else
         @config = {}
       end
