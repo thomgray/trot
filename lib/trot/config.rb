@@ -3,7 +3,9 @@ require 'yaml'
 
 module Trot
   class Config
-    def initialize
+    attr_reader :targets, :compiler_opts, :verbose
+
+    def initialize(options = {})
       json_trot_path = $fs.absolute_path 'trot.json'
       yaml_trot_path = $fs.absolute_path 'trot.yaml'
 
@@ -14,62 +16,37 @@ module Trot
       else
         @config = {}
       end
-    end
 
-    def source
-      if @config['sourceDir']
-        $fs.absolute_path @config['sourceDir']
-      else
-        Dir.pwd
-      end
-    end
-
-    def targets
-      tgts = @config['targets']
-      if tgts && tgts.length
-        raise InvalidConfigError, "'targets' must be a array" unless tgts.class == Array
-        # raise InvalidConfigError, "'targets' must be non-empty" unless tgts.length
-        return tgts.map { |t| normalise_target t }
-      end
-      return [
-        normalise_target(
-          @config.merge({'name' => @config['name'] || 'default'})
-        )
-      ]
+      @verbose = options.has_key?(:verbose) ? options[:verbose] : @config['verbose']
+      @targets = gather_targets(options)
+      @compiler_opts = gather_compiler_opts(options)
     end
 
     def target(name)
-      targets.find { |t| t[:name] == name }
-    end
-
-    def compiler_opts
-      opts = {}
-      if @config['compilerOpts'] && @config['compilerOpts'].class == Hash
-        config_opts = @config['compilerOpts']
-        opts[:debug] = config_opts['debug']
-      end
-      return opts
-    end
-
-    def build_target
-      build_config = @config['build'] || {}
-      target_path = build_config['target'] || 'a.out'
-      $fs.absolute_path(target_path)
+      targets.find { |t| t.name == name }
     end
 
     private
 
-    def normalise_target(tgt)
-      {
-        name: tgt['name'],
-        sourceDir: tgt['sourceDir'] || '',
-        dest: tgt['dest'],
-        includePaths: tgt['includePaths'] || nil,
-        libraryPaths: tgt['libraryPaths'] || nil,
-        libraries: tgt['libraries'] || nil,
-        includeDest: tgt['includeDest'] || nil,
-        staticLib: tgt['staticLib'] || nil
-      }.delete_if { |k, v| v.nil? }
+    def gather_targets(options)
+      tgts = @config['targets']
+      if tgts && tgts.length
+        raise InvalidConfigError, "'targets' must be a array" unless tgts.class == Array
+        # raise InvalidConfigError, "'targets' must be non-empty" unless tgts.length
+        return tgts.map { |t, i| Target.new(t, {i: i}) }
+      end
+      return [
+        Target.new(@config, {default: true})
+      ]
+    end
+
+    def gather_compiler_opts(options)
+      opts = {}
+      if @config['compilerOpts'] && @config['compilerOpts'].class == Hash
+        config_opts = @config['compilerOpts']
+        opts[:debug] = options.has_key?(:debug) ? options[:debug] : config_opts['debug']
+      end
+      opts
     end
   end
   

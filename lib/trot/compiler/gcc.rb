@@ -2,26 +2,38 @@ module Trot
   module Compiler
     class GCC
       def compile(sources, target_dir)
-        Dir.chdir(target_dir) {
-          system("gcc #{compiler_opts} -c #{sources.join(' ')}")
-        }
+        sources.each do |src|
+          target = File.join(target_dir, "#{File.basename(src, '.*')}.o")
+          execute "gcc #{compiler_opts} -c #{src} -o #{target}"
+        end
+        # is this better? it makes the command potentially a lot larget, but the linking command is anyway
+        # Dir.chdir(target_dir) {
+        #   execute "gcc #{compiler_opts} -c #{sources.join(' ')}"
+        # }
       end
 
       def link(object_files, target)
-        system("gcc #{compiler_opts} #{object_files.join(' ')} -o #{target}")
+        execute "gcc #{compiler_opts} #{object_files.join(' ')} -o #{target}"
       end
 
       def link_static_lib(object_files, target)
-        system("gcc #{compiler_opts} #{object_files.join(' ')} -o #{target}")
+        execute "gcc #{compiler_opts} #{object_files.join(' ')} -o #{target}"
+      end
+
+      private
+
+      def execute(cmd)
+        $logger.info(cmd)
+        system(cmd)
       end
 
       def compiler_opts
         @compiler_opts ||= Proc.new() {
-          opts = ''
+          opts = []
           if $config.compiler_opts[:debug]
-            opts << ' -W'
+            opts << '-W'
           end
-          opts
+          opts.join(' ')
         }.call
       end
     end

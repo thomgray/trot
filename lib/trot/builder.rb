@@ -7,8 +7,10 @@ module Trot
     end
 
     def build
+      puts 'target', @target
       object_files = []
       source_files_to_compile = []
+      puts '.>>>>> sources', source_files
       source_files.each { |source_file|
         file_name = File.basename(source_file, '.c')
         object_file = File.join(object_files_directory, "#{file_name}.o")
@@ -34,9 +36,9 @@ module Trot
     def link_object_files(object_files)
       return if object_files.empty?
       return unless Make.should_update_target(object_files, target_path)
-        
+
       $fs.ensure_dir target_dir
-      
+
       if is_static_lib?
         $compiler.link_static_lib(object_files, target_path)
       else
@@ -47,29 +49,32 @@ module Trot
     private
 
     def is_static_lib?
-      @is_static_lib ||= @target[:staticLib] == true
+      @is_static_lib ||= @target.is_static_lib
     end
 
     def object_files_directory
-      @object_files_directory ||= File.join($trot_build_dir, @target[:name], 'objectFiles')
+      @object_files_directory ||= File.join($trot_build_dir, @target.is_default ? '' : @target.name, 'objectFiles')
     end
 
     def source_files
-      @source_files ||= $fs.c_files_recursive(@target[:sourceDir])
+      @source_files ||= Proc.new() {
+        includes = @target.src[:include]
+        excludes = @target.src[:exclude] || []
+        puts '>>>> including', includes
+        puts '>>>>>> excluding', excludes
+        src_files = Set.new;
+        includes.each { |f| src_files += $fs.files_recursive(f) }
+        excludes.each { |x| src_files -= $fs.files_recursive(x) }
+        src_files.to_a.select { |f| f =~ /\.c$/ }
+      }.call
     end
 
     def header_files
-      @header_files ||= $fs.h_files_recursive(@target[:sourceDir])
+      # @header_files ||= $fs.h_files_recursive(@target[:sourceDir])
     end
 
     def target_path
-      @target_path ||= Proc.new() {
-        path = $fs.absolute_path @target[:dest]
-        if is_static_lib? && !path.end_with?('.a')
-          path << (path.end_with?('.') ? 'a' : '.a')
-        end
-        path
-      }.call
+      @target_path ||= $fs.absolute_path @target.dest
     end
 
     def target_name

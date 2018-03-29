@@ -1,13 +1,16 @@
 require 'trot/builder'
+require 'trot/target'
 require_relative 'mocks/mock_fs'
 
-def make_test_target(overrides = {})
-  {
-    name: 'test',
-    dest: '/foo/dest',
-    sourceDir: '/foo/bar/src',
-    target: '/foo/bar/build/testTarget'
+def make_test_target(overrides = {}, opts = {default: true})
+  config = {
+    'name' => 'test',
+    'dest' => '/foo/dest',
+    'src' => {
+      'include' => ['/foo/bar/src']
+    }
   }.merge(overrides)
+  Trot::Target.new(config, opts)
 end
 
 describe Trot::Builder do
@@ -16,7 +19,7 @@ describe Trot::Builder do
     $fs = Trot::MockFS.new
     $config = double('config')
     $compiler = double('compiler')
-    
+
     allow($compiler).to receive(:compile)
     allow($compiler).to receive(:link)
     allow($compiler).to receive(:link_static_lib)
@@ -37,13 +40,13 @@ describe Trot::Builder do
         it 'compiles the object files' do
           expect($compiler).to have_received(:compile).with(
             ['/foo/bar/main.c', '/foo/bar/foo.c'],
-            '/foo/.trotBuild/test/objectFiles'
+            '/foo/.trotBuild/objectFiles'
           )
         end
 
         it "links the object files" do
           expect($compiler).to have_received(:link).with(
-            ['/foo/.trotBuild/test/objectFiles/main.o', '/foo/.trotBuild/test/objectFiles/foo.o'],
+            ['/foo/.trotBuild/objectFiles/main.o', '/foo/.trotBuild/objectFiles/foo.o'],
             '/foo/dest'
           )
         end
@@ -64,45 +67,70 @@ describe Trot::Builder do
       end
     end
     
-    context 'with staticLib proto' do
+    context 'with staticLib target' do
       before(:example) do
         allow(Trot::Make).to receive(:should_update_target).and_return(true)
-        conf = make_test_target(staticLib: true)
-        @under_test = Trot::Builder.new(make_test_target(conf))
+        target = make_test_target('staticLib' => true)
+        @under_test = Trot::Builder.new(target)
         @under_test.build
       end
 
       it 'compiles object files' do
         expect($compiler).to have_received(:compile).with(
           ['/foo/bar/main.c', '/foo/bar/foo.c'],
-          '/foo/.trotBuild/test/objectFiles'
+          '/foo/.trotBuild/objectFiles'
         )
       end
       
       it 'links static library' do
         expect($compiler).to have_received(:link_static_lib).with(
-          ['/foo/.trotBuild/test/objectFiles/main.o', '/foo/.trotBuild/test/objectFiles/foo.o'],
+          ['/foo/.trotBuild/objectFiles/main.o', '/foo/.trotBuild/objectFiles/foo.o'],
           '/foo/dest.a'
         )
       end
     end
     
     context 'with ignored files' do
-      it 'doesn\t compile or link ignored files' do
-        @under_test = Trot::Builder.new(make_test_target(ignore: '/foo/bar/src/foo.c'))
+      before(:example) do
+        target = make_test_target(
+          'src' => {
+            'include' => ['/foo/bar'],
+            'exclude' => ['/foo/bar/main.c']
+          }
+        )
+        allow($fs).to receive(:files_recursive).and_return(
+          ['/foo/bar/foo.c', '/foo/bar/main.c'], # first call for includes
+          ['/foo/bar/main.c']                    # second call for excludes
+        )
+        @under_test = Trot::Builder.new(target)
         @under_test.build
-        
+      end
+
+      it 'checks for included files' do
+        expect($fs).to have_received(:files_recursive).with('/foo/bar')
+      end
+      
+      it 'checks for excluded files' do
+        expect($fs).to have_received(:files_recursive).with('/foo/bar/main.c')
+      end
+
+      it 'doesn\'t compile ignored files' do
         expect($compiler).to have_received(:compile).with(
           ['/foo/bar/foo.c'], '/foo/.trotBuild/objectFiles'
         )
       end
+
+      it 'doesn\'t link ignored files' do
+        expect($compiler).to have_received(:link).with(
+          ['/foo/.trotBuild/objectFiles/foo.o'], '/foo/dest'
+        )
+      end
     end
   end
-    
+
   describe '#link_object_files' do
     it 'should ' do
       
     end
   end
-  
 end

@@ -7,14 +7,18 @@ require 'pp'
 # require "irb"
 # IRB.start(__FILE__)
 
-$options = {}
+options = {}
 OptionParser.new do |opts|
   opts.banner = "Usage: trot [options] [verb] [noun]"
   opts.separator('OPTIONS')
   opts.on('-W', '--[no-]debug', 'Compile with debug flag') do |debug|
-    $options[:debug] = debug
+    options[:debug] = debug
   end
   
+  opts.on('-V', '--verbose', 'Show verbose output') do |verbose|
+    options[:verbose] = verbose
+  end
+
   opts.on_tail("-h", "--help", "Show this message") do
     puts opts
     exit
@@ -25,6 +29,13 @@ OptionParser.new do |opts|
     exit
   end
 end.parse!
+
+$fs = Trot::FS.new
+$compiler = Trot::Compiler.get
+$trot_build_dir = $fs.absolute_path '.trotBuild'
+$config = Trot::Config.new(options)
+$logger = Trot::Logger.new
+# $config.add_options options
 
 define_method :verb do; ARGV[0]; end
 define_method :noun do; ARGV[1]; end

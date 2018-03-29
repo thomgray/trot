@@ -1,5 +1,18 @@
 # Trot
 
+Trot will help you to quickly build, test and run projects in c/c++.
+
+The trot philosophy is to require a minimal config specification.
+This means that trot makes some assumptions about how to build/test/run unless you tell it to do otherwise.
+
+without any config, trot assumes the following:
++ in this directory, there is probably some source code for a c project
++ you probably want to compile and link that project
+
+so just type `trot build` (or simply `trot`).
+
+or type `trot run` to run it
+
 ## Installation
 
 ```shell
@@ -8,8 +21,18 @@ gem install -g trot
 
 ## Usage
 
+the `trot` command can take an optional verb and an optional noun.
+```shell
+trot [verb] [target]
+```
+
 ```shell
 trot
+trot build
+trot build my-target
+trot run
+trot run my-target
+trot run my-target [foo bar]
 ```
 
 ## Development

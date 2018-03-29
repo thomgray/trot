@@ -18,8 +18,18 @@ module Trot
       Dir.glob("#{absolute_path dir}/**/*.h")
     end
 
-    def dir_glob(pattern)
-      Dir.glob("#{absolute_path pattern}")
+    def files_recursive(pattern)
+      glob = Dir.glob("#{absolute_path pattern}")
+      files = Set.new
+      
+      glob.each do |f|
+        if Dir.exist? f
+          files += Dir.glob(File.join(f, '**/*'))
+        else
+          files += f
+        end
+      end
+      files.to_a
     end
 
     def read(file)
