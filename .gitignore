@@ -14,6 +14,7 @@
 build
 aliases
 trot*.yaml
+trot-*.gem
 
 sample
 sampleConfig
