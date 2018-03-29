@@ -7,6 +7,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     diff-lcs (1.3)
+    fakefs (0.13.3)
     rake (10.4.2)
     rspec (3.6.0)
       rspec-core (~> 3.6.0)
@@ -27,9 +28,10 @@ PLATFORMS
 
 DEPENDENCIES
   bundler (~> 1.16)
-  trot!
+  fakefs (~> 0.13.3)
   rake (~> 10.0)
   rspec (~> 3.0)
+  trot!
 
 BUNDLED WITH
    1.16.1

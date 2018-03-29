@@ -10,4 +10,10 @@
 # rspec failure tracking
 .rspec_status
 
-.trot_build
+.trotBuild
+build
+aliases
+trot*.yaml
+
+sample
+sampleConfig

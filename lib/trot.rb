@@ -1,11 +1,15 @@
 require 'trot/version'
-require 'trot/maker'
-require 'trot/build'
-require 'trot/run'
 require 'trot/utils'
 require 'trot/config'
+require 'trot/maker'
 
-module Trot
-  $trot_build_dir = absolute_path '.trot_build'
-  $config = Config.new
-end
+require 'trot/compiler'
+require 'trot/run'
+require 'trot/builder'
+
+include Trot
+
+$fs = Trot::FS.new
+$compiler = Trot::Compiler::GCC.new
+$trot_build_dir = $fs.absolute_path '.trotBuild'
+$config = Config.new
